@@ -14,7 +14,19 @@ using namespace std;
     'a' = 97 'z' = 122
     '0' = 48 '9' = 57
 */
+void save(vector<vector<char>>& content, string name) {
+    ofstream archive(name);
 
+    if(archive.is_open()) {
+        fore(i, 0, content.size()) {
+            fore(j, 0, content[0].size()) {
+                archive << content[i][j];
+            }
+            archive << endl;
+	    }   
+    }
+    archive.close();
+}
 vector<vector<char>> generator(vector<string>& words, int size) {
 	random_device rd;
 	mt19937 gen(rd());
@@ -25,11 +37,14 @@ vector<vector<char>> generator(vector<string>& words, int size) {
 
 	fore(i, 0, words.size()) {
 		string word = words[i];
-		distribution.param(uniform_int_distribution<int>::param_type(0, 2));
+		distribution.param(uniform_int_distribution<int>::param_type(0, 5));
 		int direction = distribution(gen);
-		// 0: horizontal
-		// 1: vertical
-		// 2: diagonal
+		// 0: horizontal ltr
+        // 1 horizontal rtl
+		// 2: vertical ttb
+		// 3: vertical btt
+        // 4: diagonal C
+        // 5: diagonal D
 
 		if(direction == 0) {
 			distribution.param(uniform_int_distribution<int>::param_type(0, size - 1));
@@ -48,7 +63,26 @@ vector<vector<char>> generator(vector<string>& words, int size) {
 			}
 			if(!ok) fore(j,0,word.length()) res[row][column+j] = word[j];
 		}
-		else if(direction == 1) {
+
+        else if(direction == 1) {
+			distribution.param(uniform_int_distribution<int>::param_type(0, size - 1));
+			int row = distribution(gen);
+
+			distribution.param(uniform_int_distribution<int>::param_type(word.length() - 1, size - 1));
+			int column = distribution(gen);
+
+			int ok = 0;
+			fore(j, 0, word.length()) {
+				if(res[row][column-j]!=32 && res[row][column-j]!=word[j]) {
+					ok = 1;
+					i--;
+					break;
+				}
+			}
+			if(!ok) fore(j,0,word.length()) res[row][column-j] = word[j];
+		}
+
+		else if(direction == 2) {
 			distribution.param(uniform_int_distribution<int>::param_type(0, size - 1));
 			int column = distribution(gen);
 
@@ -65,7 +99,26 @@ vector<vector<char>> generator(vector<string>& words, int size) {
 			}
 			if(!ok) fore(j,0,word.length()) res[row+j][column] = word[j];
 		}
-		else if(direction == 2) {
+
+        else if(direction == 3) {
+			distribution.param(uniform_int_distribution<int>::param_type(0, size - 1));
+			int column = distribution(gen);
+
+			distribution.param(uniform_int_distribution<int>::param_type(word.length() - 1, size - 1));
+			int row = distribution(gen);
+
+			int ok = 0;
+			fore(j,0,word.length()) {
+				if(res[row-j][column]!=32 && res[row-j][column]!=word[j]) {
+					ok = 1;
+					i--;
+					break;
+				}
+			}
+			if(!ok) fore(j,0,word.length()) res[row-j][column] = word[j];
+		}
+
+		else if(direction == 4) {
 			distribution.param(uniform_int_distribution<int>::param_type(0, size - word.length()));
 
 			int row = distribution(gen);
@@ -81,16 +134,29 @@ vector<vector<char>> generator(vector<string>& words, int size) {
 			}
 			if(!ok) fore(j,0,word.length()) res[row+j][column+j] = word[j];
 		}
-	}
 
-	distribution.param(uniform_int_distribution<int>::param_type(65, 90));
-	fore(i,0,size) {
-		fore(j,0,size) {
-			cout << res[i][j];
+		else if(direction == 5) {
+			distribution.param(uniform_int_distribution<int>::param_type(word.length() - 1, size - 1));
+
+			int row = distribution(gen);
+			int column = distribution(gen);
+
+			int ok = 0;
+			fore(j,0,word.length()) {
+				if(res[row-j][column-j]!=32 && res[row-j][column-j]!=word[j]) {
+					ok = 1;
+					i--;
+					break;
+				}
+			}
+			if(!ok) fore(j,0,word.length()) res[row-j][column-j] = word[j];
 		}
-		nl;
 	}
+    // Guardar solucion
+	distribution.param(uniform_int_distribution<int>::param_type(65, 90));
+	save(res, "response.txt");
 
+    // Rellenar de caracteres aleatorios
 	fore(i,0,size) {
 		fore(j,0,size) {
 			if(res[i][j]==32) {
@@ -98,8 +164,7 @@ vector<vector<char>> generator(vector<string>& words, int size) {
 			} 
 		}
 	}
-
-	nl;nl;nl;
+    
 	return res;
 }
 
@@ -124,12 +189,7 @@ int main() {
 
 	vector<vector<char>> res = generator(words, size);
 
-	fore(i,0,size) {
-		fore(j,0,size) {
-			cout << res[i][j];
-		}
-		nl;
-	}
+	save(res, "result.txt");
 
 	return 0;
 }
